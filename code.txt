@@ -1,0 +1,1160 @@
+import os, time, random
+
+scrambleNotation = []
+
+#Customisable settings 
+moveDelay = 0
+moveHistory = []
+redoHistory = []
+isUndoing = False
+
+def HandleInvalidInput():
+  os.system("clear")
+  print("Invalid input")
+  time.sleep(1.5)
+  UpdateCube()
+
+# 0 = White, 1 = Green, 2 = Red, 3 = Blue, 4 = Orange, 5 = Yellow
+cube_data = {
+    "top": {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0, "G": 0, "H": 0, "I": 0},
+    "left": {"A": 4, "B": 4, "C": 4, "D": 4, "E": 4, "F": 4, "G": 4, "H": 4, "I": 4},
+    "front": {"A": 1, "B": 1, "C": 1, "D": 1, "E": 1, "F": 1, "G": 1, "H": 1, "I": 1},
+    "right": {"A": 2, "B": 2, "C": 2, "D": 2, "E": 2, "F": 2, "G": 2, "H": 2, "I": 2},
+    "back": {"A": 3, "B": 3, "C": 3, "D": 3, "E": 3, "F": 3, "G": 3, "H": 3, "I": 3},
+    "bottom": {"A": 5, "B": 5, "C": 5, "D": 5, "E": 5, "F": 5, "G": 5, "H": 5, "I": 5},
+}
+
+starting_cube_data = {
+    "top": {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0, "G": 0, "H": 0, "I": 0},
+    "left": {"A": 4, "B": 4, "C": 4, "D": 4, "E": 4, "F": 4, "G": 4, "H": 4, "I": 4},
+    "front": {"A": 1, "B": 1, "C": 1, "D": 1, "E": 1, "F": 1, "G": 1, "H": 1, "I": 1},
+    "right": {"A": 2, "B": 2, "C": 2, "D": 2, "E": 2, "F": 2, "G": 2, "H": 2, "I": 2},
+    "back": {"A": 3, "B": 3, "C": 3, "D": 3, "E": 3, "F": 3, "G": 3, "H": 3, "I": 3},
+    "bottom": {"A": 5, "B": 5, "C": 5, "D": 5, "E": 5, "F": 5, "G": 5, "H": 5, "I": 5},
+}
+
+pieceCharacters = {
+  0: "⬜",
+  1: "🟩",
+  2: "🟥",
+  3: "🟦",
+  4: "🟧",
+  5: "🟨"
+}
+
+def ResetCube():
+  while cube_data != starting_cube_data:
+    # Resetting cube_data to its starting values
+    for face, values in cube_data.items():
+        for key, value in values.items():
+            cube_data[face][key] = starting_cube_data[face][key]
+  UpdateCube()
+
+def Scramble():
+  global scrambleNotation
+  #Generate number of moves in the scramble
+  scrambleMoves = random.randint(20, 25)
+  move = 20
+  previousMove = 99
+  roundedMove = round((move - 1) / 3) * 3 + 1
+  #Scramble
+  for _ in range(scrambleMoves):
+    while previousMove <= roundedMove + 1 and previousMove >= roundedMove - 1:
+      move = random.randint(0, 17) #Generate moves in the scramble
+      roundedMove = round((move - 1) / 3) * 3 + 1
+    if move == 0:
+      Up()
+      scrambleNotation.append("U")
+    elif move == 1:
+      for _ in range(3):
+        Up()
+      scrambleNotation.append("U'")
+    elif move == 2:
+      for _ in range(2):
+        Up()
+      scrambleNotation.append("U2")
+    elif move == 3:
+      Down()
+      scrambleNotation.append("D")
+    elif move == 4:
+      for _ in range(3):
+        Down()
+      scrambleNotation.append("D'")
+    elif move == 5:
+      for _ in range(2):
+        Down()
+      scrambleNotation.append("D2")
+    elif move == 6:
+      Right()
+      scrambleNotation.append("R")
+    elif move == 7:
+      for _ in range(3):
+        Right()
+      scrambleNotation.append("R'")
+    elif move == 8:
+      for _ in range(2):
+        Right()
+      scrambleNotation.append("R2")
+    elif move == 9:
+      Left()
+      scrambleNotation.append("L")
+    elif move == 10:
+      for _ in range(3):
+        Left()
+      scrambleNotation.append("L'")
+    elif move == 11:
+      for _ in range(2):
+        Left()
+      scrambleNotation.append("L2")
+    elif move == 12:
+      Front()
+      scrambleNotation.append("F")
+    elif move == 13:
+      for _ in range(3):
+        Front()
+      scrambleNotation.append("F'")
+    elif move == 14:
+      for _ in range(2):
+        Front()
+      scrambleNotation.append("F2")
+    elif move == 15:
+      Back()
+      scrambleNotation.append("LB")
+    elif move == 16:
+      for _ in range(3):
+        Back()
+      scrambleNotation.append("B'")
+    elif move == 17:
+      for _ in range(2):
+        Back()
+      scrambleNotation.append("B2")
+    previousMove = move
+    UpdateCube()
+
+def Save():
+  saveID = ""
+  for face in cube_data.values():
+    saveID += ''.join([str(face[key]) for key in "ABCDEFGHI"])
+  print("Save ID: " + saveID + "\nCopy this ID and use it in the 'load <ID>' command to return the cube to this state")
+
+def Load(stringID):
+  for face, stringID in zip(cube_data.values(), [stringID[i:i+9] for i in range(0, len(stringID), 9)]):
+    for key, value_char in zip(face, stringID):
+        face[key] = int(value_char)
+
+  #Update the cube to the save ID
+  UpdateCube()
+
+def Up():
+  #Side pieces
+  prevLeftA = cube_data["left"]["A"]
+  prevLeftB = cube_data["left"]["B"]
+  prevLeftC = cube_data["left"]["C"]
+  
+  cube_data["left"]["A"] = cube_data["front"]["A"]
+  cube_data["left"]["B"] = cube_data["front"]["B"]
+  cube_data["left"]["C"] = cube_data["front"]["C"]
+  
+  cube_data["front"]["A"] = cube_data["right"]["A"]
+  cube_data["front"]["B"] = cube_data["right"]["B"]
+  cube_data["front"]["C"] = cube_data["right"]["C"]
+  
+  cube_data["right"]["A"] = cube_data["back"]["A"]
+  cube_data["right"]["B"] = cube_data["back"]["B"]
+  cube_data["right"]["C"] = cube_data["back"]["C"]
+  
+  cube_data["back"]["A"] = prevLeftA
+  cube_data["back"]["B"] = prevLeftB
+  cube_data["back"]["C"] = prevLeftC
+  
+  #Face pieces
+  prevTopA = cube_data["top"]["A"]
+  prevTopB = cube_data["top"]["B"]
+
+  cube_data["top"]["A"] = cube_data["top"]["G"]
+  cube_data["top"]["G"] = cube_data["top"]["I"]
+  cube_data["top"]["I"] = cube_data["top"]["C"]
+  cube_data["top"]["C"] = prevTopA
+
+  cube_data["top"]["B"] = cube_data["top"]["D"]
+  cube_data["top"]["D"] = cube_data["top"]["H"]
+  cube_data["top"]["H"] = cube_data["top"]["F"]
+  cube_data["top"]["F"] = prevTopB
+  
+  time.sleep(moveDelay)
+
+def Down():
+  #Side pieces
+  prevBackA = cube_data["back"]["G"]
+  prevBackB = cube_data["back"]["H"]
+  prevBackC = cube_data["back"]["I"]
+  
+  cube_data["back"]["G"] = cube_data["right"]["G"]
+  cube_data["back"]["H"] = cube_data["right"]["H"]
+  cube_data["back"]["I"] = cube_data["right"]["I"]
+  
+  cube_data["right"]["G"] = cube_data["front"]["G"]
+  cube_data["right"]["H"] = cube_data["front"]["H"]
+  cube_data["right"]["I"] = cube_data["front"]["I"]
+  
+  cube_data["front"]["G"] = cube_data["left"]["G"]
+  cube_data["front"]["H"] = cube_data["left"]["H"]
+  cube_data["front"]["I"] = cube_data["left"]["I"]
+  
+  cube_data["left"]["G"] = prevBackA
+  cube_data["left"]["H"] = prevBackB
+  cube_data["left"]["I"] = prevBackC
+
+  #Face pieces
+  prevBottomA = cube_data["bottom"]["A"]
+  prevBottomB = cube_data["bottom"]["B"]
+
+  cube_data["bottom"]["A"] = cube_data["bottom"]["G"]
+  cube_data["bottom"]["G"] = cube_data["bottom"]["I"]
+  cube_data["bottom"]["I"] = cube_data["bottom"]["C"]
+  cube_data["bottom"]["C"] = prevBottomA
+
+  cube_data["bottom"]["B"] = cube_data["bottom"]["D"]
+  cube_data["bottom"]["D"] = cube_data["bottom"]["H"]
+  cube_data["bottom"]["H"] = cube_data["bottom"]["F"]
+  cube_data["bottom"]["F"] = prevBottomB
+
+  time.sleep(moveDelay)
+
+def Right():
+  #Side pieces
+  prevFrontC = cube_data["front"]["C"]
+  prevFrontF = cube_data["front"]["F"]
+  prevFrontI = cube_data["front"]["I"]
+  
+  cube_data["front"]["C"] = cube_data["bottom"]["C"]
+  cube_data["front"]["F"] = cube_data["bottom"]["F"]
+  cube_data["front"]["I"] = cube_data["bottom"]["I"]
+  
+  cube_data["bottom"]["C"] = cube_data["back"]["G"]
+  cube_data["bottom"]["F"] = cube_data["back"]["D"]
+  cube_data["bottom"]["I"] = cube_data["back"]["A"]
+  
+  cube_data["back"]["A"] = cube_data["top"]["I"]
+  cube_data["back"]["D"] = cube_data["top"]["F"]
+  cube_data["back"]["G"] = cube_data["top"]["C"]
+  
+  cube_data["top"]["C"] = prevFrontC
+  cube_data["top"]["F"] = prevFrontF
+  cube_data["top"]["I"] = prevFrontI
+  
+  #Face pieces
+  prevRightA = cube_data["right"]["A"]
+  prevRightB = cube_data["right"]["B"]
+
+  cube_data["right"]["A"] = cube_data["right"]["G"]
+  cube_data["right"]["G"] = cube_data["right"]["I"]
+  cube_data["right"]["I"] = cube_data["right"]["C"]
+  cube_data["right"]["C"] = prevRightA
+
+  cube_data["right"]["B"] = cube_data["right"]["D"]
+  cube_data["right"]["D"] = cube_data["right"]["H"]
+  cube_data["right"]["H"] = cube_data["right"]["F"]
+  cube_data["right"]["F"] = prevRightB
+
+  time.sleep(moveDelay)
+  
+def Left():
+  #Side pieces
+  prevFrontA = cube_data["front"]["A"]
+  prevFrontD = cube_data["front"]["D"]
+  prevFrontG = cube_data["front"]["G"]
+  
+  cube_data["front"]["A"] = cube_data["top"]["A"]
+  cube_data["front"]["D"] = cube_data["top"]["D"]
+  cube_data["front"]["G"] = cube_data["top"]["G"]
+  
+  cube_data["top"]["A"] = cube_data["back"]["I"]
+  cube_data["top"]["D"] = cube_data["back"]["F"]
+  cube_data["top"]["G"] = cube_data["back"]["C"]
+  
+  cube_data["back"]["I"] = cube_data["bottom"]["A"]
+  cube_data["back"]["F"] = cube_data["bottom"]["D"]
+  cube_data["back"]["C"] = cube_data["bottom"]["G"]
+  
+  cube_data["bottom"]["A"] = prevFrontA
+  cube_data["bottom"]["D"] = prevFrontD
+  cube_data["bottom"]["G"] = prevFrontG
+
+  #Face pieces
+  prevLeftA = cube_data["left"]["A"]
+  prevLeftB = cube_data["left"]["B"]
+
+  cube_data["left"]["A"] = cube_data["left"]["G"]
+  cube_data["left"]["G"] = cube_data["left"]["I"]
+  cube_data["left"]["I"] = cube_data["left"]["C"]
+  cube_data["left"]["C"] = prevLeftA
+
+  cube_data["left"]["B"] = cube_data["left"]["D"]
+  cube_data["left"]["D"] = cube_data["left"]["H"]
+  cube_data["left"]["H"] = cube_data["left"]["F"]
+  cube_data["left"]["F"] = prevLeftB
+
+  time.sleep(moveDelay)
+
+def Front():
+  #Side pieces
+  prevTopG = cube_data["top"]["G"]
+  prevTopH = cube_data["top"]["H"]
+  prevTopI = cube_data["top"]["I"]
+  
+  cube_data["top"]["G"] = cube_data["left"]["I"]
+  cube_data["top"]["H"] = cube_data["left"]["F"]
+  cube_data["top"]["I"] = cube_data["left"]["C"]
+  
+  cube_data["left"]["I"] = cube_data["bottom"]["C"]
+  cube_data["left"]["F"] = cube_data["bottom"]["B"]
+  cube_data["left"]["C"] = cube_data["bottom"]["A"]
+  
+  cube_data["bottom"]["C"] = cube_data["right"]["A"]
+  cube_data["bottom"]["B"] = cube_data["right"]["D"]
+  cube_data["bottom"]["A"] = cube_data["right"]["G"]
+  
+  cube_data["right"]["A"] = prevTopG
+  cube_data["right"]["D"] = prevTopH
+  cube_data["right"]["G"] = prevTopI
+
+  #Face pieces
+  prevFrontA = cube_data["front"]["A"]
+  prevFrontB = cube_data["front"]["B"]
+
+  cube_data["front"]["A"] = cube_data["front"]["G"]
+  cube_data["front"]["G"] = cube_data["front"]["I"]
+  cube_data["front"]["I"] = cube_data["front"]["C"]
+  cube_data["front"]["C"] = prevFrontA
+
+  cube_data["front"]["B"] = cube_data["front"]["D"]
+  cube_data["front"]["D"] = cube_data["front"]["H"]
+  cube_data["front"]["H"] = cube_data["front"]["F"]
+  cube_data["front"]["F"] = prevFrontB
+
+  time.sleep(moveDelay)
+
+def Back():
+  #Side pieces
+  prevBottomG = cube_data["bottom"]["G"]
+  prevBottomH = cube_data["bottom"]["H"]
+  prevBottomI = cube_data["bottom"]["I"]
+  
+  cube_data["bottom"]["G"] = cube_data["left"]["A"]
+  cube_data["bottom"]["H"] = cube_data["left"]["D"]
+  cube_data["bottom"]["I"] = cube_data["left"]["G"]
+  
+  cube_data["left"]["A"] = cube_data["top"]["C"]
+  cube_data["left"]["D"] = cube_data["top"]["B"]
+  cube_data["left"]["G"] = cube_data["top"]["A"]
+  
+  cube_data["top"]["C"] = cube_data["right"]["I"]
+  cube_data["top"]["B"] = cube_data["right"]["F"]
+  cube_data["top"]["A"] = cube_data["right"]["C"]
+  
+  cube_data["right"]["I"] = prevBottomG
+  cube_data["right"]["F"] = prevBottomH
+  cube_data["right"]["C"] = prevBottomI
+
+  #Face pieces
+  prevBackA = cube_data["back"]["A"]
+  prevBackB = cube_data["back"]["B"]
+
+  cube_data["back"]["A"] = cube_data["back"]["G"]
+  cube_data["back"]["G"] = cube_data["back"]["I"]
+  cube_data["back"]["I"] = cube_data["back"]["C"]
+  cube_data["back"]["C"] = prevBackA
+
+  cube_data["back"]["B"] = cube_data["back"]["D"]
+  cube_data["back"]["D"] = cube_data["back"]["H"]
+  cube_data["back"]["H"] = cube_data["back"]["F"]
+  cube_data["back"]["F"] = prevBackB
+
+  time.sleep(moveDelay)
+
+def Middle():
+  #Side pieces
+  prevFrontB = cube_data["front"]["B"]
+  prevFrontE = cube_data["front"]["E"]
+  prevFrontH = cube_data["front"]["H"]
+
+  cube_data["front"]["B"] = cube_data["top"]["B"]
+  cube_data["front"]["E"] = cube_data["top"]["E"]
+  cube_data["front"]["H"] = cube_data["top"]["H"]
+
+  cube_data["top"]["B"] = cube_data["back"]["H"]
+  cube_data["top"]["E"] = cube_data["back"]["E"]
+  cube_data["top"]["H"] = cube_data["back"]["B"]
+
+  cube_data["back"]["H"] = cube_data["bottom"]["B"]
+  cube_data["back"]["E"] = cube_data["bottom"]["E"]
+  cube_data["back"]["B"] = cube_data["bottom"]["H"]
+
+  cube_data["bottom"]["B"] = prevFrontB
+  cube_data["bottom"]["E"] = prevFrontE
+  cube_data["bottom"]["H"] = prevFrontH
+
+  time.sleep(moveDelay)
+
+def Equatorial():
+  prevFrontD = cube_data["front"]["D"]
+  prevFrontE = cube_data["front"]["E"]
+  prevFrontF = cube_data["front"]["F"]
+
+  cube_data["front"]["D"] = cube_data["left"]["D"]
+  cube_data["front"]["E"] = cube_data["left"]["E"]
+  cube_data["front"]["F"] = cube_data["left"]["F"]
+
+  cube_data["left"]["D"] = cube_data["back"]["D"]
+  cube_data["left"]["E"] = cube_data["back"]["E"]
+  cube_data["left"]["F"] = cube_data["back"]["F"]
+
+  cube_data["back"]["D"] = cube_data["right"]["D"]
+  cube_data["back"]["E"] = cube_data["right"]["E"]
+  cube_data["back"]["F"] = cube_data["right"]["F"]
+
+  cube_data["right"]["D"] = prevFrontD
+  cube_data["right"]["E"] = prevFrontE
+  cube_data["right"]["F"] = prevFrontF
+
+  time.sleep(moveDelay)
+
+def Standing():
+  prevTopD = cube_data["top"]["D"]
+  prevTopE = cube_data["top"]["E"]
+  prevTopF = cube_data["top"]["F"]
+
+  cube_data["top"]["D"] = cube_data["left"]["H"]
+  cube_data["top"]["E"] = cube_data["left"]["E"]
+  cube_data["top"]["F"] = cube_data["left"]["B"]
+
+  cube_data["left"]["H"] = cube_data["bottom"]["F"]
+  cube_data["left"]["E"] = cube_data["bottom"]["E"]
+  cube_data["left"]["B"] = cube_data["bottom"]["D"]
+
+  cube_data["bottom"]["F"] = cube_data["right"]["B"]
+  cube_data["bottom"]["E"] = cube_data["right"]["E"]
+  cube_data["bottom"]["D"] = cube_data["right"]["H"]
+
+  cube_data["right"]["B"] = prevTopD
+  cube_data["right"]["E"] = prevTopE
+  cube_data["right"]["H"] = prevTopF
+
+  time.sleep(moveDelay)
+
+def Solve():
+  startTime = time.time()
+  nextMoves = ""
+  while cube_data != starting_cube_data: #Cube is not solved
+    if cube_data["bottom"]["E"] != 0: #Step 1: White on bottom
+      whiteOnBottom = False
+      for _ in range(4):
+        nextMoves = "x"
+        NotationString(nextMoves.strip().upper())
+        if cube_data["bottom"]["E"] == 0:
+          whiteOnBottom = True
+          break
+      if not whiteOnBottom:
+        for _ in range(4):
+          nextMoves = "z"
+          NotationString(nextMoves.strip().upper())
+          if cube_data["bottom"]["E"] == 0:
+            break
+    #Step 1: White on bottom complete
+    while (cube_data["bottom"]["B"] != 0) or (cube_data["front"]["H"] != cube_data["front"]["E"]) or (cube_data["bottom"]["D"] != 0) or (cube_data["left"]["H"] != cube_data["left"]["E"]) or (cube_data["bottom"]["F"] != 0) or (cube_data["right"]["H"] != cube_data["right"]["E"]) or (cube_data["bottom"]["H"] != 0) or (cube_data["back"]["H"] != cube_data["back"]["E"]): #Step 2: White cross
+      for _ in range(4):
+        for _ in range(4):
+          if cube_data["bottom"]["B"] == 0: #White piece on bottom
+            pieceColour = cube_data["front"]["H"]
+            currentCentreColour = cube_data["front"]["E"]
+            if pieceColour != currentCentreColour: #Different centre colour
+              nextMoves = "f2"
+              NotationString(nextMoves.strip().upper())
+              loopAmount = abs(currentCentreColour - pieceColour)
+              nextMoves = ("u'y" * loopAmount) + "f2" + (("y") * (4 - loopAmount))
+              NotationString(nextMoves.strip().upper())
+          elif cube_data["front"]["H"] == 0: #White piece on front
+            pieceColour = cube_data["bottom"]["B"]
+            currentCentreColour = cube_data["front"]["E"]
+            if pieceColour != currentCentreColour: #Different centre colour
+              nextMoves = "fd'l'du'"
+              NotationString(nextMoves.strip().upper())
+              loopAmount = abs(currentCentreColour - pieceColour)
+              nextMoves = ("u'y" * loopAmount) + "f2" + (("y") * (4 - loopAmount))
+              NotationString(nextMoves.strip().upper())
+            else: #Same centre colour
+              nextMoves = "fd'ld"
+              NotationString(nextMoves.strip().upper())
+          if cube_data["bottom"]["B"] == 0 and cube_data["front"]["H"] == cube_data["front"]["E"] and cube_data["bottom"]["D"] == 0 and cube_data["left"]["H"] == cube_data["left"]["E"] and cube_data["bottom"]["F"] == 0 and cube_data["right"]["H"] == cube_data["right"]["E"] and cube_data["bottom"]["H"] == 0 and cube_data["back"]["H"] == cube_data["back"]["E"]: #Stop if cross is already complete
+            break
+          dMovesDone = 0
+          if cube_data["bottom"]["B"] == 0 and cube_data["front"]["H"] == cube_data["front"]["E"]: #If bottom piece is white
+            while cube_data["bottom"]["B"] == 0: #Change bottom piece temporarily for F cycle
+              if cube_data["bottom"]["B"] == 0 and cube_data["front"]["H"] == cube_data["front"]["E"] and cube_data["bottom"]["D"] == 0 and cube_data["left"]["H"] == cube_data["left"]["E"] and cube_data["bottom"]["F"] == 0 and cube_data["right"]["H"] == cube_data["right"]["E"] and cube_data["bottom"]["H"] == 0 and cube_data["back"]["H"] == cube_data["back"]["E"]: #Stop if cross is already complete
+                break
+              nextMoves = "d'"
+              NotationString(nextMoves.strip().upper())
+              dMovesDone += 1
+              if dMovesDone >= 4: #Specific case for 2 swapped edges
+                if cube_data["left"]["H"] != cube_data["left"]["E"] and abs(cube_data["left"]["H"] - cube_data["right"]["H"]) == 2: #Opposite swap v1
+                  nextMoves = "dm2u2m2d"
+                  NotationString(nextMoves.strip().upper())
+                elif cube_data["front"]["H"] != cube_data["front"]["E"] and abs(cube_data["front"]["H"] - cube_data["back"]["H"]) == 2: #Opposite swap v2
+                  nextMoves = "m2u2m2"
+                  NotationString(nextMoves.strip().upper())
+                while cube_data["right"]["H"] != cube_data["right"]["E"] and cube_data["back"]["H"] != cube_data["back"]["E"]:
+                  for _ in range(4):
+                    nextMoves = "y"
+                    NotationString(nextMoves.strip().upper())
+                    if cube_data["right"]["H"] == cube_data["right"]["E"] and cube_data["back"]["H"] == cube_data["back"]["E"]:
+                      break
+                  if cube_data["right"]["H"] == cube_data["right"]["E"] and cube_data["back"]["H"] == cube_data["back"]["E"]:
+                    break
+                  nextMoves = "d"
+                  NotationString(nextMoves.strip().upper())
+                  dMovesDone += 1
+                  if cube_data["right"]["H"] == cube_data["right"]["E"] and cube_data["back"]["H"] == cube_data["back"]["E"]:
+                    break
+                  if dMovesDone >= 8:
+                    nextMoves = "m'umu'sus'u'm'u'my2"
+                    NotationString(nextMoves.strip().upper())
+                    if cube_data["right"]["H"] != cube_data["right"]["E"] and cube_data["back"]["H"] != cube_data["back"]["E"]:
+                      nextMoves = "z2m2um2u2m2um2z2"
+                      NotationString(nextMoves.strip().upper())
+                nextMoves = "m'umu'sus'u'm'u'm"
+                NotationString(nextMoves.strip().upper())
+          if cube_data["bottom"]["B"] == 0 and cube_data["front"]["H"] == cube_data["front"]["E"] and cube_data["bottom"]["D"] == 0 and cube_data["left"]["H"] == cube_data["left"]["E"] and cube_data["bottom"]["F"] == 0 and cube_data["right"]["H"] == cube_data["right"]["E"] and cube_data["bottom"]["H"] == 0 and cube_data["back"]["H"] == cube_data["back"]["E"]: #Stop if cross is already complete
+            break
+          specificMove = "f"
+          extraMove = ""
+          if ((cube_data["bottom"]["D"] == 0 and (cube_data["bottom"]["F"] == 0 or cube_data["bottom"]["H"])) or (cube_data["bottom"]["F"] and cube_data["bottom"]["H"] == 0)) and cube_data["front"]["F"] == 0: #Specific case for last edge(s)
+            specificMove = ""
+            extraMove = "r'"
+          nextMoves = specificMove + ("d" * dMovesDone) + extraMove #F cycle and undo temporary D's
+          NotationString(nextMoves.strip().upper())
+        if cube_data["bottom"]["B"] == 0 and cube_data["front"]["H"] == cube_data["front"]["E"] and cube_data["bottom"]["D"] == 0 and cube_data["left"]["H"] == cube_data["left"]["E"] and cube_data["bottom"]["F"] == 0 and cube_data["right"]["H"] == cube_data["right"]["E"] and cube_data["bottom"]["H"] == 0 and cube_data["back"]["H"] == cube_data["back"]["E"]: #Stop if cross is already complete
+          break
+        nextMoves = "y"
+        NotationString(nextMoves.strip().upper())
+    #Step 2: White cross complete
+    while (cube_data["bottom"]["A"] != 0) or (cube_data["front"]["G"] != cube_data["front"]["E"]) or (cube_data["left"]["I"] != cube_data["left"]["E"]) or (cube_data["bottom"]["C"] != 0) or (cube_data["front"]["I"] != cube_data["front"]["E"]) or (cube_data["right"]["G"] != cube_data["right"]["E"]) or (cube_data["bottom"]["G"] != 0) or (cube_data["back"]["I"] != cube_data["back"]["E"]) or (cube_data["left"]["G"] != cube_data["left"]["E"]) or (cube_data["bottom"]["I"] != 0) or (cube_data["back"]["G"] != cube_data["back"]["E"]) or (cube_data["right"]["I"] != cube_data["right"]["E"]): #Step 3: First layer
+      for _ in range(4):
+        for _ in range(2):
+          if cube_data["bottom"]["C"] == 0: #White piece on bottom
+            pieceColour = cube_data["front"]["I"]
+            currentCentreColour = cube_data["front"]["E"]
+            if pieceColour != currentCentreColour: #Different centre colour
+              nextMoves = "rur'u'"
+              NotationString(nextMoves.strip().upper())
+              loopAmount = abs(currentCentreColour - pieceColour)
+              nextMoves = ("u'y" * loopAmount) + "uru'r'" + (("y") * (4 - loopAmount))
+              NotationString(nextMoves.strip().upper())
+          elif cube_data["front"]["I"] == 0: #White piece on front
+            pieceColour = cube_data["right"]["G"]
+            currentCentreColour = cube_data["front"]["E"]
+            if pieceColour != currentCentreColour: #Different centre colour
+              nextMoves = "rur'u'"
+              NotationString(nextMoves.strip().upper())
+              loopAmount = abs(currentCentreColour - pieceColour)
+              nextMoves = ("u'y" * loopAmount) + ("rur'u'" * 3) + (("y") * (4 - loopAmount))
+              NotationString(nextMoves.strip().upper())
+            else: #Same centre colour
+              nextMoves = "uru'r'" * 2
+              NotationString(nextMoves.strip().upper())
+          elif cube_data["right"]["G"] == 0: #White piece on right side
+            pieceColour = cube_data["bottom"]["C"]
+            currentCentreColour = cube_data["front"]["E"]
+            if pieceColour != currentCentreColour: #Different centre colour
+              nextMoves = "rur'u'"
+              NotationString(nextMoves.strip().upper())
+              loopAmount = abs(currentCentreColour - pieceColour)
+              nextMoves = ("u'y" * loopAmount) + "rur'u'" + (("y") * (4 - loopAmount))
+              NotationString(nextMoves.strip().upper())
+            else: #Same centre colour
+              nextMoves = "rur'u'" * 2
+              NotationString(nextMoves.strip().upper())
+          else: #No white piece at corner
+            nextMoves = "rur'u'"
+            NotationString(nextMoves.strip().upper())
+        nextMoves = "y"
+        NotationString(nextMoves.strip().upper())
+      yMovesDone = 0
+      for _ in range(2):
+        uMovesDone = 0
+        while cube_data["bottom"]["C"] == 0 and cube_data["front"]["I"] == cube_data["front"]["E"] and yMovesDone < 4: #Cycle to next corner if current corner is white
+          nextMoves = "y"
+          NotationString(nextMoves.strip().upper())
+          yMovesDone += 1
+        while cube_data["bottom"]["C"] != 0 or cube_data["front"]["I"] != cube_data["front"]["E"]: #Until white corner is white
+          for _ in range(6): #Insert white corner if there is one
+            nextMoves = "rur'u'"
+            NotationString(nextMoves.strip().upper())
+            if cube_data["bottom"]["C"] == 0 and cube_data["front"]["I"] == cube_data["front"]["E"]: #Break sequence if correct white corner is inserted
+              break
+          if cube_data["bottom"]["C"] == 0 and cube_data["front"]["I"] == cube_data["front"]["E"]: #Break sequence if correct white corner is inserted
+            break
+          nextMoves = "u'"
+          NotationString(nextMoves.strip().upper())
+          uMovesDone += 1
+          if uMovesDone >= 4: #Fail safe
+            nextMoves = "y"
+            NotationString(nextMoves.strip().upper())
+    #Step 3: First layer complete
+    while (cube_data["front"]["D"] != cube_data["front"]["E"]) or (cube_data["front"]["F"] != cube_data["front"]["E"]) or (cube_data["right"]["D"] != cube_data["right"]["E"]) or (cube_data["right"]["F"] != cube_data["right"]["E"]) or (cube_data["back"]["D"] != cube_data["back"]["E"]) or (cube_data["back"]["F"] != cube_data["back"]["E"]) or (cube_data["left"]["D"] != cube_data["left"]["E"]) or (cube_data["left"]["F"] != cube_data["left"]["E"]): #Step 4: Second layer
+      consecutiveTopMoves = 0
+      while consecutiveTopMoves < 4:
+        if cube_data["front"]["B"] != 5 and cube_data["top"]["H"] != 5: #Edge without yellow found
+          pieceColour = cube_data["front"]["B"]
+          topPieceColour = cube_data["top"]["H"]
+          currentCentreColour = cube_data["front"]["E"]
+          loopAmount = currentCentreColour - pieceColour
+          cycleMoveOne = "u'y"
+          cycleMoveTwo = "y"
+          if loopAmount < 0:
+            cycleMoveOne = "uy'"
+            cycleMoveTwo = "y'"
+          loopAmount = abs(loopAmount)
+          insertMoves = "u'l'ulf'lfl'" #Insert edge to the left
+          if (topPieceColour < pieceColour and topPieceColour + 2 > pieceColour) or topPieceColour > pieceColour + 2: #Insert edge to the right instead
+            insertMoves = "uru'r'fr'f'r"
+          nextMoves = (cycleMoveOne * loopAmount) + insertMoves + ((cycleMoveTwo) * (4 - loopAmount))
+          NotationString(nextMoves.strip().upper())
+          consecutiveTopMoves = 0
+        else: #U cycle if no edge found
+          nextMoves = "u"
+          NotationString(nextMoves.strip().upper())
+          consecutiveTopMoves += 1
+      if cube_data["front"]["F"] != cube_data["front"]["E"]: #Wrong edge inserted
+        nextMoves = "uru'r'fr'f'ru2"
+        NotationString(nextMoves.strip().upper())
+        consecutiveTopMoves -= 1
+      else: #Cycle to the next side to check for a wrong edge
+        nextMoves = "y"
+        NotationString(nextMoves.strip().upper())
+    #Step 4: Second layer complete
+    while (cube_data["top"]["B"] != 5) or (cube_data["top"]["D"] != 5) or (cube_data["top"]["F"] != 5) or (cube_data["top"]["H"] != 5): #Step 5: Yellow cross
+      if cube_data["top"]["B"] != 5 and cube_data["top"]["D"] != 5 and cube_data["top"]["F"] != 5 and cube_data["top"]["H"] != 5: #Yellow dot
+        nextMoves = "frur'u'srur'u'fw'"
+        NotationString(nextMoves.strip().upper())
+      else: #Yellow L case or yellow line case
+        nextMoves = "frur'u'f'u"
+        NotationString(nextMoves.strip().upper())
+    #Step 5: Yellow cross complete
+    while (cube_data["front"]["B"] != cube_data["front"]["E"]) or (cube_data["right"]["B"] != cube_data["right"]["E"]) or(cube_data["back"]["B"] != cube_data["back"]["E"]) or (cube_data["left"]["B"] != cube_data["left"]["E"]): #Step 6: Yellow cross edges
+      while cube_data["front"]["B"] != cube_data["front"]["E"]: #U cycle until front edge is aligned
+        nextMoves = "u"
+        NotationString(nextMoves.strip().upper())
+      if cube_data["front"]["B"] == cube_data["front"]["E"] and cube_data["right"]["B"] == cube_data["right"]["E"] and cube_data["back"]["B"] == cube_data["back"]["E"] and cube_data["left"]["B"] == cube_data["left"]["E"]: #Stop if already done
+        break
+      frontEdge = cube_data["front"]["B"]
+      backEdge = cube_data["back"]["B"]
+      frontBackDif = abs(frontEdge - backEdge)
+      rightEdge = cube_data["right"]["B"]
+      leftEdge = cube_data["left"]["B"]
+      rightLeftDif = abs(rightEdge - leftEdge)
+      if frontBackDif == 2 or rightLeftDif == 2: #Opposite edges match
+        nextMoves = "rur'uru2r'"
+        NotationString(nextMoves.strip().upper())
+      uMovesDone = 0
+      while cube_data["back"]["B"] != cube_data["back"]["E"] or cube_data["right"]["B"] != cube_data["right"]["E"]: #L edges match
+        if uMovesDone < 4: #U cycle until edges are at back and right
+          nextMoves = "u"
+          uMovesDone += 1
+        else: #Y cycle until possible
+          nextMoves = "y"
+          uMovesDone = 0
+        NotationString(nextMoves.strip().upper())
+      nextMoves = "rur'uru2r'"
+      NotationString(nextMoves.strip().upper())
+      while cube_data["front"]["B"] != cube_data["front"]["E"]: #U cycle until front edge is aligned
+        nextMoves = "u"
+        NotationString(nextMoves.strip().upper())
+    #Step 6: Yellow cross edges complete
+    while (cube_data["front"]["C"] != cube_data["front"]["E"] and cube_data["front"]["C"] != cube_data["top"]["E"] and cube_data["front"]["C"] != cube_data["right"]["E"]) or (cube_data["top"]["I"] != cube_data["front"]["E"] and cube_data["top"]["I"] != cube_data["top"]["E"] and cube_data["top"]["I"] != cube_data["right"]["E"]) or (cube_data["right"]["A"] != cube_data["front"]["E"] and cube_data["right"]["A"] != cube_data["top"]["E"] and cube_data["right"]["A"] != cube_data["right"]["E"]) or (cube_data["right"]["C"] != cube_data["right"]["E"] and cube_data["right"]["C"] != cube_data["top"]["E"] and cube_data["right"]["C"] != cube_data["back"]["E"]) or (cube_data["top"]["C"] != cube_data["right"]["E"] and cube_data["top"]["C"] != cube_data["top"]["E"] and cube_data["top"]["C"] != cube_data["back"]["E"]) or (cube_data["back"]["A"] != cube_data["right"]["E"] and cube_data["back"]["A"] != cube_data["top"]["E"] and cube_data["back"]["A"] != cube_data["back"]["E"]) or (cube_data["back"]["C"] != cube_data["back"]["E"] and cube_data["back"]["C"] != cube_data["top"]["E"] and cube_data["back"]["C"] != cube_data["left"]["E"]) or (cube_data["top"]["A"] != cube_data["back"]["E"] and cube_data["top"]["A"] != cube_data["top"]["E"] and cube_data["top"]["A"] != cube_data["left"]["E"]) or (cube_data["left"]["A"] != cube_data["back"]["E"] and cube_data["left"]["A"] != cube_data["top"]["E"] and cube_data["left"]["A"] != cube_data["left"]["E"]) or (cube_data["left"]["C"] != cube_data["left"]["E"] and cube_data["left"]["C"] != cube_data["top"]["E"] and cube_data["left"]["C"] != cube_data["front"]["E"]) or (cube_data["top"]["G"] != cube_data["left"]["E"] and cube_data["top"]["G"] != cube_data["top"]["E"] and cube_data["top"]["G"] != cube_data["front"]["E"]) or (cube_data["front"]["A"] != cube_data["left"]["E"] and cube_data["front"]["A"] != cube_data["top"]["E"] and cube_data["front"]["A"] != cube_data["front"]["E"]): #Step 7: Yellow corners position
+      yMovesDone = 0
+      while (cube_data["front"]["C"] != cube_data["front"]["E"] and cube_data["front"]["C"] != cube_data["top"]["E"] and cube_data["front"]["C"] != cube_data["right"]["E"]) or (cube_data["top"]["I"] != cube_data["front"]["E"] and cube_data["top"]["I"] != cube_data["top"]["E"] and cube_data["top"]["I"] != cube_data["right"]["E"]) or (cube_data["right"]["A"] != cube_data["front"]["E"] and cube_data["right"]["A"] != cube_data["top"]["E"] and cube_data["right"]["A"] != cube_data["right"]["E"]): #Y cycle until a corner matches position
+        if yMovesDone < 4:
+          nextMoves = "y"
+          NotationString(nextMoves.strip().upper())
+          yMovesDone += 1
+        else: #No corners match position
+          nextMoves = "uru'l'ur'u'l"
+          NotationString(nextMoves.strip().upper())
+          yMovesDone = 0
+      nextMoves = "uru'l'ur'u'l"
+      NotationString(nextMoves.strip().upper())
+    #Step 7: Yellow corners position complete
+    #Step 7.5: Yellow on top
+    nextMoves = "x2"
+    NotationString(nextMoves.strip().upper())
+    #Step 7.5: Yellow on top complete
+    while cube_data["bottom"]["A"] != 5 or cube_data["bottom"]["C"] != 5 or cube_data["bottom"]["G"] != 5 or cube_data["bottom"]["I"] != 5: #Step 8: Last layer
+      while cube_data["bottom"]["C"] != 5: #Insert yellow corner
+        nextMoves = "rur'u'" * 2
+        NotationString(nextMoves.strip().upper())
+      nextMoves = "d"
+      NotationString(nextMoves.strip().upper())
+    while cube_data["front"]["H"] != cube_data["front"]["E"]: #Align last layer
+      nextMoves = "d"
+      NotationString(nextMoves.strip().upper())
+    while cube_data["front"]["E"] != 1: #Align cube
+      nextMoves = "y"
+      NotationString(nextMoves.strip().upper())
+  endTime = time.time()
+  elapsedTime = endTime - startTime
+  print("Cube solved in " + str(round(elapsedTime, 2)) + " seconds" )
+          
+def UpdateCube():
+  os.system("clear")
+  print("Use the 'help' command for a list of commands (not case sensitive)")
+  topACharacter = pieceCharacters.get(cube_data["top"]["A"], "⬛")
+  topBCharacter = pieceCharacters.get(cube_data["top"]["B"], "⬛")
+  topCCharacter = pieceCharacters.get(cube_data["top"]["C"], "⬛")
+  topDCharacter = pieceCharacters.get(cube_data["top"]["D"], "⬛")
+  topECharacter = pieceCharacters.get(cube_data["top"]["E"], "⬛")
+  topFCharacter = pieceCharacters.get(cube_data["top"]["F"], "⬛")
+  topGCharacter = pieceCharacters.get(cube_data["top"]["G"], "⬛")
+  topHCharacter = pieceCharacters.get(cube_data["top"]["H"], "⬛")
+  topICharacter = pieceCharacters.get(cube_data["top"]["I"], "⬛")
+  leftACharacter = pieceCharacters.get(cube_data["left"]["A"], "⬛")
+  leftBCharacter = pieceCharacters.get(cube_data["left"]["B"], "⬛")
+  leftCCharacter = pieceCharacters.get(cube_data["left"]["C"], "⬛")
+  leftDCharacter = pieceCharacters.get(cube_data["left"]["D"], "⬛")
+  leftECharacter = pieceCharacters.get(cube_data["left"]["E"], "⬛")
+  leftFCharacter = pieceCharacters.get(cube_data["left"]["F"], "⬛")
+  leftGCharacter = pieceCharacters.get(cube_data["left"]["G"], "⬛")
+  leftHCharacter = pieceCharacters.get(cube_data["left"]["H"], "⬛")
+  leftICharacter = pieceCharacters.get(cube_data["left"]["I"], "⬛")
+  midACharacter = pieceCharacters.get(cube_data["front"]["A"], "⬛")
+  midBCharacter = pieceCharacters.get(cube_data["front"]["B"], "⬛")
+  midCCharacter = pieceCharacters.get(cube_data["front"]["C"], "⬛")
+  midDCharacter = pieceCharacters.get(cube_data["front"]["D"], "⬛")
+  midECharacter = pieceCharacters.get(cube_data["front"]["E"], "⬛")
+  midFCharacter = pieceCharacters.get(cube_data["front"]["F"], "⬛")
+  midGCharacter = pieceCharacters.get(cube_data["front"]["G"], "⬛")
+  midHCharacter = pieceCharacters.get(cube_data["front"]["H"], "⬛")
+  midICharacter = pieceCharacters.get(cube_data["front"]["I"], "⬛")
+  rightACharacter = pieceCharacters.get(cube_data["right"]["A"], "⬛")
+  rightBCharacter = pieceCharacters.get(cube_data["right"]["B"], "⬛")
+  rightCCharacter = pieceCharacters.get(cube_data["right"]["C"], "⬛")
+  rightDCharacter = pieceCharacters.get(cube_data["right"]["D"], "⬛")
+  rightECharacter = pieceCharacters.get(cube_data["right"]["E"], "⬛")
+  rightFCharacter = pieceCharacters.get(cube_data["right"]["F"], "⬛")
+  rightGCharacter = pieceCharacters.get(cube_data["right"]["G"], "⬛")
+  rightHCharacter = pieceCharacters.get(cube_data["right"]["H"], "⬛")
+  rightICharacter = pieceCharacters.get(cube_data["right"]["I"], "⬛")
+  backACharacter = pieceCharacters.get(cube_data["back"]["A"], "⬛")
+  backBCharacter = pieceCharacters.get(cube_data["back"]["B"], "⬛")
+  backCCharacter = pieceCharacters.get(cube_data["back"]["C"], "⬛")
+  backDCharacter = pieceCharacters.get(cube_data["back"]["D"], "⬛")
+  backECharacter = pieceCharacters.get(cube_data["back"]["E"], "⬛")
+  backFCharacter = pieceCharacters.get(cube_data["back"]["F"], "⬛")
+  backGCharacter = pieceCharacters.get(cube_data["back"]["G"], "⬛")
+  backHCharacter = pieceCharacters.get(cube_data["back"]["H"], "⬛")
+  backICharacter = pieceCharacters.get(cube_data["back"]["I"], "⬛")
+  bottomACharacter = pieceCharacters.get(cube_data["bottom"]["A"], "⬛")
+  bottomBCharacter = pieceCharacters.get(cube_data["bottom"]["B"], "⬛")
+  bottomCCharacter = pieceCharacters.get(cube_data["bottom"]["C"], "⬛")
+  bottomDCharacter = pieceCharacters.get(cube_data["bottom"]["D"], "⬛")
+  bottomECharacter = pieceCharacters.get(cube_data["bottom"]["E"], "⬛")
+  bottomFCharacter = pieceCharacters.get(cube_data["bottom"]["F"], "⬛")
+  bottomGCharacter = pieceCharacters.get(cube_data["bottom"]["G"], "⬛")
+  bottomHCharacter = pieceCharacters.get(cube_data["bottom"]["H"], "⬛")
+  bottomICharacter = pieceCharacters.get(cube_data["bottom"]["I"], "⬛")
+  print("      " + topACharacter + topBCharacter + topCCharacter)
+  print("      " + topDCharacter + topECharacter + topFCharacter)
+  print("      " + topGCharacter + topHCharacter + topICharacter)
+  print(leftACharacter + leftBCharacter + leftCCharacter + 
+          midACharacter + midBCharacter + midCCharacter + 
+          rightACharacter + rightBCharacter + rightCCharacter + 
+          backACharacter + backBCharacter + backCCharacter)
+  print(leftDCharacter + leftECharacter + leftFCharacter + 
+          midDCharacter + midECharacter + midFCharacter + 
+          rightDCharacter + rightECharacter + rightFCharacter +
+          backDCharacter + backECharacter + backFCharacter)
+  print(leftGCharacter + leftHCharacter + leftICharacter + 
+          midGCharacter + midHCharacter + midICharacter + 
+          rightGCharacter + rightHCharacter + rightICharacter + 
+          backGCharacter + backHCharacter + backICharacter)
+  print("      " + bottomACharacter + bottomBCharacter + bottomCCharacter)
+  print("      " + bottomDCharacter + bottomECharacter + bottomFCharacter)
+  print("      " + bottomGCharacter + bottomHCharacter + bottomICharacter)
+  print("")
+
+def NotationString(stringInput):
+  global moveHistory
+  global isUndoing
+  i = 0  # Initialize index variable
+  while i < len(stringInput):
+      move = stringInput[i]
+      if i < len(stringInput) - 1 and stringInput[i + 1] == "'":  # Check if the next character is an apostrophe
+        primeMove = move + "'"  # Combine current character with apostrophe to form prime move
+        # Check for prime moves
+        if primeMove in ["U'", "D'", "R'", "L'", "F'", "B'", "M'", "E'", "S'", "X'", "Y'", "Z'"]:
+          for _ in range(3):
+            if move == "U":
+              Up()
+            elif move == "D":
+              Down()
+            elif move == "R":
+              Right()
+            elif move == "L":
+              Left()
+            elif move == "F":
+              Front()
+            elif move == "B":
+              Back()
+            elif move == "M":
+              Middle()
+            elif move == "E":
+              Equatorial()
+            elif move == "S":
+              Standing()
+            elif move == "X":
+              Right()
+              for _ in range(3):
+                Left()
+                Middle()
+            elif move == "Y":
+              Up()
+              for _ in range(3):
+                Down()
+                Equatorial()
+            elif move == "Z":
+              Front()
+              Standing()
+              for _ in range(3):
+                Back()
+          if not isUndoing:
+            moveHistory.append(move + "'")
+          UpdateCube()
+          i += 2  # Skip the apostrophe in the next iteration
+        else:
+          HandleInvalidInput()
+          i += 1  # Move to the next character even if it's invalid
+      elif i < len(stringInput) - 1 and stringInput[i + 1] == "2":  # Check if the next character is "2"
+        doubleMove = move + "2"  # Combine current character with "2" to form double move
+        # Check for double moves
+        if doubleMove in ["U2", "D2", "R2", "L2", "F2", "B2", "M2", "E2", "S2", "X2", "Y2", "Z2"]:
+          for _ in range(2):
+            if move == "U":
+              Up()
+            elif move == "D":
+              Down()
+            elif move == "R":
+              Right()
+            elif move == "L":
+              Left()
+            elif move == "F":
+              Front()
+            elif move == "B":
+              Back()
+            elif move == "M":
+              Middle()
+            elif move == "E":
+              Equatorial()
+            elif move == "S":
+              Standing()
+            elif move == "X":
+              Right()
+              for _ in range(3):
+                Left()
+                Middle()
+            elif move == "Y":
+              Up()
+              for _ in range(3):
+                Down()
+                Equatorial()
+            elif move == "Z":
+              Front()
+              Standing()
+              for _ in range(3):
+                Back()
+          if not isUndoing:
+            moveHistory.append(move + "2")
+          UpdateCube()
+          i += 2  # Skip the "2" in the next iteration
+        else:
+          HandleInvalidInput()
+          i += 1  # Move to the next character even if it's invalid
+      elif i < len(stringInput) - 1 and stringInput[i + 1] == "W":  # Check if the next character is "W"
+        wideMove = move + "W"  # Combine current character with "W" to form wide move
+        turnAmount = 1  # Default turn amount
+        skipExtra = 0 #Deafult extra string letter skip
+        if i < len(stringInput) - 2 and stringInput[i + 2] == "'":  # Check if the next next character is an apostrophe
+          wideMove += "'"  # Add apostrophe to wide move
+          turnAmount = 3  # Set turn amount to 3 for prime move
+          skipExtra = 1 #Extra string letter skip
+          i += 1  # Move to the next next character
+        elif i < len(stringInput) - 2 and stringInput[i + 2] == "2":  # Check if the next next character is "2"
+          wideMove += "2"  # Add "2" to wide move
+          turnAmount = 2  # Set turn amount to 2 for double turn
+          skipExtra = 1 #Extra string letter skip
+          i += 1  # Move to the next next character
+        # Check for wide moves
+        if wideMove in ["UW", "DW", "RW", "LW", "FW", "BW", "UW'", "DW'", "RW'", "LW'", "FW'", "BW'" , "UW2", "DW2", "RW2", "LW2", "FW2", "BW2"]:
+          for _ in range(turnAmount):
+            if move == "U":
+              Up()
+              for _ in range(3):
+                Equatorial()
+            elif move == "D":
+              Down()
+              Equatorial()
+            elif move == "R":
+              Right()
+              for _ in range(3):
+                Middle()
+            elif move == "L":
+              Left()
+              Middle()
+            elif move == "F":
+              Front()
+              Standing()
+            elif move == "B":
+              Back()
+              for _ in range(3):
+                Standing()
+          stringToAdd = ""
+          if turnAmount == 2:
+            stringToAdd = "2"
+          elif turnAmount == 3:
+            stringToAdd = "'"
+          if not isUndoing:
+            moveHistory.append(move + "W" + stringToAdd)
+          UpdateCube()
+          i += 2 + skipExtra  # Skip the "W" in the next iteration
+        else:
+          HandleInvalidInput()
+          i += 1 + skipExtra # Move to the next character even if it's invalid
+      else:
+        # Check for single-letter moves
+        if move == "U":
+          Up()
+          if not isUndoing:
+            moveHistory.append(move)
+        elif move == "D":
+          Down() 
+          if not isUndoing:
+            moveHistory.append(move)
+        elif move == "R":
+          Right()
+          if not isUndoing:
+            moveHistory.append(move)
+        elif move == "L":
+          Left()
+          if not isUndoing:
+            moveHistory.append(move)
+        elif move == "F":
+          Front()
+          if not isUndoing:
+            moveHistory.append(move)
+        elif move == "B":
+          Back()
+          if not isUndoing:
+            moveHistory.append(move)
+        elif move == "M":
+          Middle()
+          if not isUndoing:
+            moveHistory.append(move)
+        elif move == "E":
+          Equatorial()
+          if not isUndoing:
+            moveHistory.append(move)
+        elif move == "S":
+          Standing()
+          if not isUndoing:
+            moveHistory.append(move)
+        elif move == "X":
+          Right()
+          if not isUndoing:
+            moveHistory.append(move)
+          for _ in range(3):
+            Left()
+            Middle()
+        elif move == "Y":
+          Up()
+          if not isUndoing:
+            moveHistory.append(move)
+          for _ in range(3):
+            Down()
+            Equatorial()
+        elif move == "Z":
+          Front()
+          Standing()
+          if not isUndoing:
+            moveHistory.append(move)
+          for _ in range(3):
+            Back()
+        elif move == " " or move == "[" or move == "]" or move == "(" or move == ")" or move == "'" or move == ",":
+          UpdateCube()
+        else:
+            HandleInvalidInput()
+        UpdateCube()
+        i += 1  # Move to the next character
+
+def Pattern(patternName):
+  algo = ""
+  if patternName == "CHECKERBOARD":
+    algo = "m2e2s2"
+  NotationString(algo.strip().upper())
+
+UpdateCube()
+
+while True:
+  # Prompt the player for input
+  userInput = input("Command: ").strip().upper()
+  words = userInput.split()
+  
+  #Commands
+  if userInput == "QUIT": #Quit command
+    os.system("clear")
+    print("Program stopped")
+    exit()
+  elif userInput == "HELP": #Help command
+    os.system("clear")
+    print("'Rubiks Framework' project by Biticalifi\n\nCommands: \n\nquit - Quit the program\nhelp - Show this list of commands\nhelp2 - Shows a second list of commands\n\nMove commands:\n\nu - Turn the upwards face\nd - Turn the downwards face\nr - Turn the rightwards face\nl - Turn the leftwards face\nf - Turn the front face\nb - Turn the back face\nm - Turn the middle layer\ne - Turn the equatorial layer\ns - Turn the sides' middle layer\n\nx - Rotate cube on R\ny - Rotate cube on U\nz - Rotate cube on F\n\n<move> + \' - Prime turn (counterclockwise)\n<move> + 2 - Half/Double turn\n<move> + w - Wide turn")
+    input("\nPress enter to leave")
+    os.system("clear")
+    UpdateCube()
+  elif userInput == "HELP2" or userInput == "HELP 2":
+    os.system("clear")
+    print("'Rubiks Framework' project by Biticalifi\n\nCube commands:\n\nreset - Returns the cube to its solved state and resets move history\nscramble - Randomly scrambles the cube\nsolve - Solves the cube algorithmically similarly to the beginner method\n\nsave - Prints an ID that can be loaded using 'load <ID>'\nload <ID> - Loads an ID for a save state\n\nhistory - Shows your move history\nundo <value> - Undoes the last <value> moves from your history\nundo all - Undoes all moves from your history\nredo <value> - Redoes the last <value> undone moves\nredo all - Redoes all undone moves\n\nCustomisation commands:\n\ndelay get - Returns the current delay between each turn\ndelay set <value> - Changes the delay between each turn\n\ncolour set <int> <new colour> - Replaces a colour with any string\ncolour reset - Resets all colours to their default values\ncolours[0 = ⬜, 1 = 🟩, 2 = 🟥, 3 = 🟦, 4 = 🟧, 5 = 🟨]")
+    input("\nPress enter to leave")
+    os.system("clear")
+    UpdateCube()
+  elif userInput == "RESET": #Reset command
+    ResetCube()
+    moveHistory.clear()
+    redoHistory.clear()
+    UpdateCube()
+  elif userInput == "SCRAMBLE": #Scramble command
+    scrambleNotation.clear()
+    Scramble()
+    formattedOutput = "Scramble: [" + ", ".join(scrambleNotation) + "]"
+    print(formattedOutput)
+  elif userInput == "SOLVE":
+    Solve()
+  elif userInput == "SAVE": #Save command
+    os.system("clear")
+    UpdateCube()
+    Save()
+  elif len(words) >= 2 and words[0] == "LOAD": #Load command
+    try:
+      saveID = str(words[1])
+      Load(saveID)
+    except ValueError:
+      print("Invalid save ID. Please enter a valid integer.")
+      time.sleep(1.5)
+      UpdateCube()
+  elif userInput == "HISTORY": #History command
+    UpdateCube()
+    formattedOutput = "Move history: [" + ", ".join(moveHistory) + "]"
+    print(formattedOutput)
+  elif len(words) >= 2 and words[0] == "UNDO": #Undo commands
+    try:
+      # Try to convert the third word to a float
+      if words[1] == "ALL":
+        undoValue = len(moveHistory)
+      else:
+        undoValue = int(words[1])
+      # Check if the history has enough moves to undo
+      if undoValue <= len(moveHistory):
+        # Undo the specified number of moves
+        isUndoing = True
+        for _ in range(undoValue):
+          lastMove = moveHistory.pop()
+          redoHistory.append(lastMove)
+          for _ in range(3):
+            NotationString(lastMove)
+        isUndoing = False
+      else:
+        print("Not enough moves in history to undo\nYour move history has " + str(len(moveHistory)) + " moves")
+        time.sleep(4)
+      UpdateCube()
+    except ValueError:
+      # Handle the case where the third word is not a valid float
+      print("Invalid undo value. Please enter a valid integer number")
+      time.sleep(1.5)
+      UpdateCube()
+  elif len(words) >= 2 and words[0] == "REDO": #Redo commands
+    try:
+      # Try to convert the third word to a float
+      if words[1] == "ALL":
+        redoValue = len(redoHistory)
+      else:
+        redoValue = int(words[1])
+      # Check if the history has enough moves to undo
+      if redoValue <= len(redoHistory):
+        # Undo the specified number of moves
+        for _ in range(redoValue):
+          lastMove = redoHistory.pop()
+          NotationString(lastMove)
+      else:
+        print("Not enough moves in history to redo\nYour undone history has " + str(len(redoHistory)) + " moves")
+        time.sleep(4)
+      UpdateCube()
+    except ValueError:
+      # Handle the case where the third word is not a valid float
+      print("Invalid redo value. Please enter a valid integer number")
+      time.sleep(1.5)
+      UpdateCube()
+  elif len(words) >= 2 and words[0] == "DELAY": #Delay commands
+    if words[1] == "GET":
+      print("Current delay is " + str(moveDelay))
+      time.sleep(1.5)
+      UpdateCube()
+    elif len(words) >= 3 and words[1] == "SET":
+      try:
+        # Try to convert the third word to a float
+        delayValue = float(words[2])
+        if delayValue < 0: #Min 0 delay
+          delayValue = 0
+        moveDelay = delayValue
+        print(f"Delay set to {moveDelay}")
+        time.sleep(1.5)
+        UpdateCube()
+      except ValueError:
+        # Handle the case where the third word is not a valid float
+        print("Invalid delay value. Please enter a valid float number")
+        time.sleep(1.5)
+        UpdateCube()
+  elif len(words) >= 2 and (words[0] == "COLOUR" or words[0] == "COLOR"): #Colour commands
+    if words[1] == "SET" and len(words) >= 4:
+      try:
+        colourToChange = int(words[2])
+        if colourToChange < 0 or colourToChange > 5:
+          print("Invalid colour value. Please enter a number between 0 and 5")
+          time.sleep(1.5)
+          UpdateCube()
+        else:
+          newColourString = str(words[3])
+          pieceCharacters[colourToChange] = newColourString
+          print("Colour " + str(colourToChange) + " successfully set to " + newColourString)
+          time.sleep(2)
+          UpdateCube()
+      except ValueError:
+        print("Invalid colour value. Please enter a number between 0 and 5")
+        time.sleep(1.5)
+        UpdateCube()
+    elif words[1] == "RESET":
+      pieceCharacters[0] = "⬜"
+      pieceCharacters[1] = "🟩"
+      pieceCharacters[2] = "🟥"
+      pieceCharacters[3] = "🟦"
+      pieceCharacters[4] = "🟧"
+      pieceCharacters[5] = "🟨" 
+      print("Colours reset")
+      time.sleep(1.5)
+      UpdateCube()
+    else:
+      HandleInvalidInput()
+  elif userInput == "CHECKERBOARD":
+    Pattern(userInput)
+  else: #Turn commands
+    if not userInput:
+      HandleInvalidInput()
+    else:
+      redoHistory.clear()
+      NotationString(userInput)
