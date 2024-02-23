@@ -2,7 +2,7 @@
 
 Commands: 
 
-quit - Quit the program
+quit - Quit the program\n
 help - Show this list of commands
 help2 - Shows a second list of commands
 
